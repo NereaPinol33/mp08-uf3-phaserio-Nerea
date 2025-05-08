@@ -13,7 +13,7 @@ export class GameComplete extends Scene {
         this.add.image(512, 384, 'background');
         this.record_sound = this.sound.add('recordSound');
         this.record_sound.play();
-        const newRecordText = this.add.text(512, -200, 'New Record!', {
+        const newRecordText = this.add.text(512, -200, '¡Nuevo Récord!', {
             fontFamily: 'Arial Black',
             fontSize: 64,
             color: '#ffffff',
@@ -22,9 +22,9 @@ export class GameComplete extends Scene {
             align: 'center'
         }).setOrigin(0.5);
 
-        // Get the new score from the game scene
+        // Obtener la nueva puntuación desde la escena del juego
         const newScore = this.scene.get('Game').data.get('score') || 0;
-        const newScoreDisplay = this.add.text(512, 400, 'New Score: ' + newScore, {
+        const newScoreDisplay = this.add.text(512, 400, 'Nueva Puntuación: ' + newScore, {
             fontFamily: 'Arial Black',
             fontSize: 48,
             color: '#ffffff',

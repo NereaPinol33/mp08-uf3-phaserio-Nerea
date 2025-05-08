@@ -9,6 +9,8 @@ export class Game extends Scene {
     preload() {
         this.load.image('island_png', 'assets/game/map/island_24x24.png');
         this.load.tilemapTiledJSON('island', 'assets/game/map/island.json');
+      //  this.load.image('second_map_tileset', 'assets/game/map/second_map_tileset.png'); // Tileset del segundo mapa
+      //  this.load.tilemapTiledJSON('second_map', 'assets/game/map/second_map.json'); // Segundo mapa
         this.load.image('xp', 'assets/game/other/xp.png');
         this.load.image('bullet', 'assets/game/other/electroball.png');
         this.load.image('health', 'assets/game/other/life.png');
@@ -94,6 +96,9 @@ export class Game extends Scene {
         this.physics.add.overlap(this.player, this.tripleShotPowerups, this.collectTripleShotPowerup, null, this);
         this.physics.add.overlap(this.player, this.shooting360Powerups, this.collectShooting360Powerup, null, this);
         this.physics.add.overlap(this.player, this.xpItems, this.collectXP, null, this); // Overlap for XP items
+
+        // Inicializar velocidad de las balas
+        this.bulletSpeed = 150; // Velocidad base de las balas
     }
 
     update(time, delta) {
@@ -138,14 +143,14 @@ export class Game extends Scene {
         // Calcular el ángulo entre la bala y el puntero
         const angle = Phaser.Math.Angle.Between(bullet.x, bullet.y, pointer.x, pointer.y);
         bullet.rotation = Phaser.Math.RadToDeg(angle);
-        
+
         // Añadir una animación de rotación a la bala
         this.tweens.add({
             targets: bullet,
-            rotation: bullet.rotation + Phaser.Math.PI2, // Rotar 360 grados
+            rotation: bullet.rotation + Phaser.Math.PI2,
             duration: 1000,
             ease: 'Linear',
-            repeat: -1 // Repetir indefinidamente
+            repeat: -1
         });
     }
 
@@ -387,11 +392,7 @@ export class Game extends Scene {
                 this.livesText.setText('Lives: ' + this.livesCount);
                 break;
             case 'upgrade_shot':
-                this.isTripleShotActive = true; // Activar triple disparo
                 this.bulletSpeed += 50; // Incrementar la velocidad de las balas acumulativamente
-                this.time.delayedCall(10000, () => {
-                    this.isTripleShotActive = false;
-                });
                 break;
             case 'upgrade_invulnerable':
                 this.isInvincible = true; // Activar invulnerabilidad
@@ -404,5 +405,43 @@ export class Game extends Scene {
                 if (this.enemySpeed < 50) this.enemySpeed = 50; // Velocidad mínima
                 break;
         }
+    }
+
+    loadSecondMap() {
+        // Limpiar el mapa y los enemigos actuales
+        this.enemies.clear(true, true);
+        this.physics.world.colliders.destroy();
+    
+        // Configurar el segundo mapa
+        const map = this.make.tilemap({ key: 'second_map' });
+        const tileset = map.addTilesetImage('second_map_tileset', 'second_map_tileset');
+        const fondo = map.createLayer('Tile Layer 1', tileset, 0, 0);
+        fondo.setCollisionByProperty({ colision: true });
+    
+        // Actualizar colisiones
+        this.physics.add.collider(this.player, fondo);
+        this.physics.add.collider(this.bullets, this.enemies, this.hitEnemy, null, this);
+        this.physics.add.collider(this.player, this.enemies, this.enemyCollision, null, this);
+    
+        // Actualizar enemigos para incluir `enemy3`
+        this.spawnEnemy = () => {
+            const minDistance = 250; // Minimum distance from the player
+            let x, y;
+            const playerX = this.player.x;
+            const playerY = this.player.y;
+    
+            // Ensure enemy spawns at least `minDistance` away from the player
+            do {
+                x = Phaser.Math.Between(0, this.game.config.width);
+                y = Phaser.Math.Between(0, this.game.config.height);
+            } while (Phaser.Math.Distance.Between(playerX, playerY, x, y) < minDistance);
+    
+            // Spawn only `enemy3` in the second map
+            const enemy = this.enemies.create(x, y, 'enemy3');
+            enemy.setData('speed', this.enemySpeed); // Default speed
+            enemy.setData('damage', 2); // Removes 2 lives
+            enemy.setScale(3); // Default scale
+            enemy.setCollideWorldBounds(true);
+        };
     }
 }
