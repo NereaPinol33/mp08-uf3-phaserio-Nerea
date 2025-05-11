@@ -260,7 +260,7 @@ export class Game extends Scene {
             const damage = enemy.getData('damage'); // Get the damage value of the enemy
             this.livesCount -= damage; // Subtract the appropriate number of lives
             this.damageSound.play();
-            this.livesText.setText('Lives: ' + this.livesCount);
+            this.livesText.setText('Vidas: ' + this.livesCount);
             this.data.set('lives', this.livesCount);
             enemy.destroy();
     
