@@ -89,7 +89,7 @@ export class Game extends Scene {
         this.experienceToNextLevel = 100;
 
         // Mostrar nivel
-        this.levelText = this.add.text(16, 84, 'Nivel: ' + this.level, { fontSize: '32px', fill: '#fff' });
+        this.levelText = this.add.text(16, 84, 'Nivell: ' + this.level, { fontSize: '32px', fill: '#fff' });
 
         // Configurar colisiones
         this.physics.add.collider(this.bullets, this.enemies, this.hitEnemy, null, this);
