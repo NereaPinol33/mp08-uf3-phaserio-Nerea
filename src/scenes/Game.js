@@ -7,10 +7,9 @@ export class Game extends Scene {
     }
 
     preload() {
-        this.load.image('island_png', 'assets/game/map/island_24x24.png');
-        this.load.tilemapTiledJSON('island', 'assets/game/map/island.json');
-      //  this.load.image('second_map_tileset', 'assets/game/map/second_map_tileset.png'); // Tileset del segundo mapa
-      //  this.load.tilemapTiledJSON('second_map', 'assets/game/map/second_map.json'); // Segundo mapa
+        console.log('Preload Game');
+        this.load.image('map1_tiles', 'assets/game/maps/map1/map1_tiles.png');
+        this.load.tilemapTiledJSON('map1', 'assets/game/maps/map1/map1.json');
         this.load.image('xp', 'assets/game/other/xp.png');
         this.load.image('bullet', 'assets/game/other/electroball.png');
         this.load.image('health', 'assets/game/other/life.png');
@@ -28,77 +27,81 @@ export class Game extends Scene {
         this.load.image('upgrade_shot', 'assets/game/other/cards/upgrade_shot.png');
         this.load.image('upgrade_invulnerable', 'assets/game/other/cards/upgrade_invulnerable.png');
         this.load.image('upgrade_enemyweak', 'assets/game/other/cards/upgrade_enemyweak.png');
-
+        this.load.audio('powerupSound', 'assets/game/sounds/powerup.mp3');
     }
 
     create() {
-
-        // Game variables
+        // Variables del juego
         this.score = 0;
         this.livesCount = 3;
-        this.enemySpawnInterval = 2000; // initial spawn interval
+        this.enemySpawnInterval = 2000; // Intervalo inicial de aparición de enemigos
         this.lastEnemySpawnTime = 0;
-        this.enemySpeed = 100; // initial enemy speed
+        this.enemySpeed = 100; // Velocidad inicial de los enemigos
         this.isInvincible = false;
-        this.isTripleShotActive = false; // Track if triple shot power-up is active
-        this.isShooting360Active = false; // Track if 360-degree shooting power-up is active
+        this.isTripleShotActive = false;
+        this.isShooting360Active = false;
         this.record = this.data.get('record') || 0;
 
-        // Music
+        // Música de fondo
         this.backgroundMusic = this.sound.add('backgroundMusic', { loop: true });
         this.backgroundMusic.play();
 
-        // Sounds
+        // Initialize sounds
         this.attackSound = this.sound.add('attackSound');
         this.damageSound = this.sound.add('damageSound');
+        this.powerupSound = this.sound.add('powerupSound');
 
-        // Tilemap setup
-        const map = this.make.tilemap({ key: 'island' });
-        const tileset = map.addTilesetImage('island_24x24', 'island_png');
-        var fondo = map.createLayer('Survival Island', tileset, 0, 0);
-        fondo.setCollisionByProperty({ colision: true });
+        // Configurar el mapa
+        const map = this.make.tilemap({ key: 'map1' });
+        map.addTilesetImage('map1_tiles', 'map1_tiles');
+        const mapLayer = map.createLayer('map1', 'map1_tiles', 0, 0);
 
-        // Player setup
+        // Configurar colisiones en el mapa
+        mapLayer.setCollisionByProperty({ colide: true });
+
+        // Configurar el jugador
         this.player = this.physics.add.sprite(100, 450, 'player');
-        this.player.setScale(0.5);  // Adjust the scale as needed
+        this.player.setScale(0.5); // Ajustar el tamaño del jugador
 
-        // Score and lives setup
-        this.scoreText = this.add.text(16, 16, 'Score: ' + this.score, { fontSize: '32px', fill: '#000' });
-        this.livesText = this.add.text(16, 50, 'Lives: ' + this.livesCount, { fontSize: '32px', fill: '#000' });
+        // Configurar colisiones entre el jugador y las paredes
+        this.physics.add.collider(this.player, mapLayer);
 
-        // Input setup
+        // Mostrar puntuación y vidas
+        this.scoreText = this.add.text(16, 16, 'Puntuación: ' + this.score, { fontSize: '32px', fill: '#fff' });
+        this.livesText = this.add.text(16, 50, 'Vidas: ' + this.livesCount, { fontSize: '32px', fill: '#fff' });
+
+        // Configurar controles
         this.cursors = this.input.keyboard.createCursorKeys();
         this.input.on('pointerdown', this.shootBullet, this);
 
-        // Groups
+        // Grupos
         this.bullets = this.physics.add.group();
         this.enemies = this.physics.add.group();
         this.healthItems = this.physics.add.group();
         this.powerups = this.physics.add.group();
-        this.tripleShotPowerups = this.physics.add.group(); // Group for triple-shot power-ups
-        this.shooting360Powerups = this.physics.add.group(); // Group for 360-degree shooting power-ups
-        this.xpItems = this.physics.add.group(); // Group for XP items
+        this.tripleShotPowerups = this.physics.add.group();
+        this.shooting360Powerups = this.physics.add.group();
+        this.xpItems = this.physics.add.group();
 
-        // Player level and experience
+        // Nivel y experiencia del jugador
         this.level = 1;
         this.experience = 0;
-        this.experienceToNextLevel = 100; // XP needed to level up
+        this.experienceToNextLevel = 100;
 
-        // Display level
-        this.levelText = this.add.text(16, 84, 'Level: ' + this.level, { fontSize: '32px', fill: '#000' });
+        // Mostrar nivel
+        this.levelText = this.add.text(16, 84, 'Nivel: ' + this.level, { fontSize: '32px', fill: '#fff' });
 
-        // Colliders
-        this.physics.add.collider(this.player, fondo);
+        // Configurar colisiones
         this.physics.add.collider(this.bullets, this.enemies, this.hitEnemy, null, this);
         this.physics.add.collider(this.player, this.enemies, this.enemyCollision, null, this);
         this.physics.add.overlap(this.player, this.healthItems, this.collectHealth, null, this);
         this.physics.add.overlap(this.player, this.powerups, this.collectPowerup, null, this);
         this.physics.add.overlap(this.player, this.tripleShotPowerups, this.collectTripleShotPowerup, null, this);
         this.physics.add.overlap(this.player, this.shooting360Powerups, this.collectShooting360Powerup, null, this);
-        this.physics.add.overlap(this.player, this.xpItems, this.collectXP, null, this); // Overlap for XP items
+        this.physics.add.overlap(this.player, this.xpItems, this.collectXP, null, this);
 
         // Inicializar velocidad de las balas
-        this.bulletSpeed = 150; // Velocidad base de las balas
+        this.bulletSpeed = 150;
     }
 
     update(time, delta) {
@@ -136,7 +139,9 @@ export class Game extends Scene {
     }
 
     shootBullet(pointer) {
-        this.attackSound.play();
+        if (this.attackSound) {
+            this.attackSound.play();
+        }
         const bullet = this.bullets.create(this.player.x, this.player.y, 'bullet');
         this.physics.moveTo(bullet, pointer.x, pointer.y, this.bulletSpeed); // Usar this.bulletSpeed
         
@@ -197,19 +202,19 @@ export class Game extends Scene {
             enemy = this.enemies.create(x, y, 'enemy');
             enemy.setData('speed', this.enemySpeed); // Default speed
             enemy.setData('damage', 1); // Default damage
-            enemy.setScale(3); // Default scale
+            enemy.setScale(0.1); // Default scale
         } else if (enemyType === 2) {
             // Enemy 2 (2% faster)
             enemy = this.enemies.create(x, y, 'enemy2');
             enemy.setData('speed', this.enemySpeed * 1.02); // 2% faster
             enemy.setData('damage', 1); // Default damage
-            enemy.setScale(3);
+            enemy.setScale(0.1);
         } else if (enemyType === 3) {
             // Enemy 3 (removes 2 lives)
             enemy = this.enemies.create(x, y, 'enemy3');
             enemy.setData('speed', this.enemySpeed); // Default speed
             enemy.setData('damage', 2); // Removes 2 lives
-            enemy.setScale(3); // Default scale
+            enemy.setScale(0.1); // Default scale
         }
     
         enemy.setCollideWorldBounds(true);
@@ -219,7 +224,7 @@ export class Game extends Scene {
         bullet.destroy();
         enemy.destroy();
         this.score += 10;
-        this.scoreText.setText('Score: ' + this.score);
+        this.scoreText.setText('Puntuación: ' + this.score);
         this.data.set('score', this.score);
 
         // Random chance to drop XP
@@ -291,6 +296,9 @@ export class Game extends Scene {
 
     collectPowerup(player, powerup) {
         powerup.destroy();
+        if (this.powerupSound) {
+            this.powerupSound.play();
+        }
         this.isInvincible = true;
         player.setTint(0x00ff00); // Change player color to indicate invincibility
         this.time.delayedCall(10000, () => {
@@ -301,6 +309,9 @@ export class Game extends Scene {
 
     collectTripleShotPowerup(player, tripleShotPowerup) {
         tripleShotPowerup.destroy();
+        if (this.powerupSound) {
+            this.powerupSound.play();
+        }
         this.isTripleShotActive = true;
         player.setTint(0x0000ff); // Change player color to indicate triple shot power-up
         this.time.delayedCall(10000, () => {
@@ -311,6 +322,9 @@ export class Game extends Scene {
 
     collectShooting360Powerup(player, shooting360) {
         shooting360.destroy();
+        if (this.powerupSound) {
+            this.powerupSound.play();
+        }
         this.isShooting360Active = true;
         player.setTint(0xff00ff); // Change player color to indicate 360-degree shooting power-up
         this.time.delayedCall(10000, () => {
